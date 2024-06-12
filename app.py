@@ -92,6 +92,7 @@ def register():
     # authenticate the user in model
 
     username = request.json["username"]
+
     token = create_access_token(identity=username)
 
     return jsonify({"token": token})
