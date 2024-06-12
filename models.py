@@ -5,5 +5,5 @@ from flask_sqlalchemy import SQLAlchemy
 
 bcrypt = Bcrypt()
 
-db = SQLAlchemy()
-dbx = db.session.execute
+# db = SQLAlchemy()
+# dbx = db.session.execute
