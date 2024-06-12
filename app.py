@@ -78,6 +78,30 @@ def get_token():
     # authenticate the user in model
 
     username = request.json["username"]
+
+    # how to add a secret key when making the token
     token = create_access_token(identity=username)
 
     return jsonify({"token": token})
+
+
+@app.post('/register')
+def register():
+    """Register user and get a token"""
+
+    # authenticate the user in model
+
+    username = request.json["username"]
+    token = create_access_token(identity=username)
+
+    return jsonify({"token": token})
+
+
+@app.post('/users/<username>')
+def get_user(username):
+    """Get user info"""
+
+    # authenticate the token, in middleware?
+    # in the model, query the db for the user
+
+    return jsonify({"user": {username: "testuser"}})
