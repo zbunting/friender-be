@@ -8,7 +8,7 @@ bcrypt = Bcrypt()
 db = SQLAlchemy()
 dbx = db.session.execute
 
-DEFAULT_IMAGE_NAME = "default.jpg"
+DEFAULT_IMAGE_URL = "https://zb-friender.s3.amazonaws.com/default.png"
 
 
 class Friend(db.Model):
@@ -108,7 +108,7 @@ class User(db.Model):
         nullable=False,
     )
 
-    image_name = db.mapped_column(
+    image_url = db.mapped_column(
         db.String(100),
         nullable=False
     )
@@ -155,7 +155,7 @@ class User(db.Model):
             hashed_pwd=hashed_pwd,
             first_name=first_name,
             bio=bio,
-            image_name=DEFAULT_IMAGE_NAME
+            image_url=DEFAULT_IMAGE_URL
         )
 
         db.session.add(user)
@@ -170,5 +170,10 @@ class User(db.Model):
             "username": self.username,
             "first_name": self.first_name,
             "bio": self.bio,
-            "image_name": self.image_name
+            "image_url": self.image_url
         }
+
+    def update_image_url(self, image_url):
+        """Change a user's image_url"""
+
+        self.image_url = image_url

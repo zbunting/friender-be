@@ -45,6 +45,12 @@ SECRET_KEY = os.environ['SECRET_KEY']
 def upload_image():
     """Handle image upload"""
 
+    decoded_token = jwt.decode(
+        request.headers["authorization"], SECRET_KEY, algorithms=['HS256'])
+
+    username = decoded_token["username"]
+    user = db.get_or_404(User, username)
+
     # need to validate file type
     # WTForms?
     file = request.files['image']
@@ -59,6 +65,8 @@ def upload_image():
                 "ContentType": file.content_type,
             }
         )
+        user.update_image_url(f"{S3_LOCATION}{filename}")
+        db.session.commit()
     except Exception as e:
         return {"errors": str(e)}
 
