@@ -10,8 +10,8 @@ from flask import (
     Flask, request, jsonify
 )
 
-# from models import (
-#     db, dbx)
+from models import (
+    db, dbx, User, Friend, Like)
 
 from sqlalchemy.exc import IntegrityError
 
@@ -31,20 +31,12 @@ s3 = boto3.client(
     aws_access_key_id=os.getenv('AWS_ACCESS_KEY'),
     aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
 )
-# s3 = boto3.resource('s3')
+
 jwt = JWTManager(app)
-# db.init_app(app)
+db.init_app(app)
 
 BUCKET_NAME = os.environ.get("AWS_BUCKET_NAME")
 S3_LOCATION = f"http://{BUCKET_NAME}.s3.amazonaws.com/"
-
-# put the below in a .env file (no quotes for AWS info)
-# SECRET_KEY="something""
-# DATABASE_URL="//"
-# AWS_ACCESS_KEY=
-# AWS_SECRET_ACCESS_KEY=
-# AWS_BUCKET_NAME=
-# AWS_DOMAIN=http://bucket_name.s3.amazonaws.com/
 
 
 @app.post('/uploadimage')
@@ -98,11 +90,13 @@ def register():
     return jsonify({"token": token})
 
 
-@app.post('/users/<username>')
+@app.get('/users/<username>')
 def get_user(username):
     """Get user info"""
+
+    print(f"THE RECEIVED TOKEN IS {request.headers["authorization"]}")
 
     # authenticate the token, in middleware?
     # in the model, query the db for the user
 
-    return jsonify({"user": {username: "testuser"}})
+    return jsonify({"user": {"username": f"{username} received"}})
