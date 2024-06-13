@@ -160,3 +160,14 @@ class User(db.Model):
 
         db.session.add(user)
         return user
+
+    # add in error handling
+    def get_user_details(self):
+        """Get this user's details"""
+
+        return {
+            "username": self.username,
+            "first_name": self.first_name,
+            "bio": self.bio,
+            "image_name": self.image_name
+        }

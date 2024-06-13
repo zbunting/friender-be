@@ -90,6 +90,22 @@ def register():
     return jsonify({"token": token})
 
 
+@app.get('/users')
+def get_users():
+    """Get users' info"""
+
+    decoded_token = jwt.decode(request.headers["authorization"])
+    username = decoded_token["sub"]
+    print(f"THE USERNAME IS -------------------->", username)
+
+    q = db.select(User).where(User.username != username)
+    usersInst = dbx(q).scalars().all()
+
+    users = [usersInst.field for field in usersInst if field != "hashed_pwd"]
+
+    return jsonify(users)
+
+
 @app.get('/users/<username>')
 def get_user(username):
     """Get user info"""
@@ -99,4 +115,8 @@ def get_user(username):
     # authenticate the token, in middleware?
     # in the model, query the db for the user
 
-    return jsonify({"user": {"username": f"{username} received"}})
+    # query the db (method on the user model) by username
+
+    user = db.get_or_404(User, username)
+
+    return jsonify({"user": user.get_user_details()})
