@@ -134,3 +134,30 @@ def get_user(username):
     user = db.get_or_404(User, username)
 
     return jsonify({"user": user.user_details})
+
+
+@app.post('/users/like/<username>')
+def like_user(username):
+    """Like a user"""
+
+    decoded_token = jwt.decode(
+        request.headers["authorization"], SECRET_KEY, algorithms=['HS256'])
+
+    curr_username = decoded_token["username"]
+
+    # query the db to see if username has liked curr user
+    q = db.select(Like).where(Like.is_liking == username &
+                              Like.is_liked == curr_username)
+    like = dbx(q).one_or_none()
+
+    if (like):
+        friend = Friend(is_friended_username=curr_username,
+                        is_friending=username)
+        db.session.add(friend)
+        db.session.commit()
+        return jsonify({"msg": "match"})
+
+    new_like = Like(is_liked_username=username, is_liking=curr_username)
+    db.session.add(new_like)
+    db.session.commit()
+    return jsonify({"msg": "liked"})
