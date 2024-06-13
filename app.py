@@ -5,7 +5,8 @@ from werkzeug.utils import secure_filename
 
 from flask_cors import CORS
 
-from flask_jwt_extended import JWTManager, create_access_token
+import jwt
+# from flask_jwt_extended import JWTManager, create_access_token
 from flask import (
     Flask, request, jsonify
 )
@@ -32,11 +33,12 @@ s3 = boto3.client(
     aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
 )
 
-jwt = JWTManager(app)
+# jwt = JWTManager(app)
 db.init_app(app)
 
 BUCKET_NAME = os.environ.get("AWS_BUCKET_NAME")
 S3_LOCATION = f"http://{BUCKET_NAME}.s3.amazonaws.com/"
+SECRET_KEY = os.environ['SECRET_KEY']
 
 
 @app.post('/uploadimage')
@@ -72,7 +74,7 @@ def get_token():
     username = request.json["username"]
 
     # how to add a secret key when making the token
-    token = create_access_token(identity=username)
+    token = jwt.encode({"username": username}, SECRET_KEY, algorithm="HS256")
 
     return jsonify({"token": token})
 
@@ -85,7 +87,7 @@ def register():
 
     username = request.json["username"]
 
-    token = create_access_token(identity=username)
+    token = jwt.encode({"username": username}, SECRET_KEY, algorithm="HS256")
 
     return jsonify({"token": token})
 
@@ -94,16 +96,20 @@ def register():
 def get_users():
     """Get users' info"""
 
-    decoded_token = jwt.decode(request.headers["authorization"])
-    username = decoded_token["sub"]
-    print(f"THE USERNAME IS -------------------->", username)
+    decoded_token = jwt.decode(
+        request.headers["authorization"], SECRET_KEY, algorithms=['HS256'])
+
+    username = decoded_token["username"]
 
     q = db.select(User).where(User.username != username)
     usersInst = dbx(q).scalars().all()
+    print(f"THE USERSINSTS ARE -------------------->", usersInst)
 
-    users = [usersInst.field for field in usersInst if field != "hashed_pwd"]
+    users = [user.user_details for user in usersInst]
 
-    return jsonify(users)
+    print(f"THE USERS ARE -------------------->", users)
+
+    return jsonify({"users": users})
 
 
 @app.get('/users/<username>')
@@ -119,4 +125,4 @@ def get_user(username):
 
     user = db.get_or_404(User, username)
 
-    return jsonify({"user": user.get_user_details()})
+    return jsonify({"user": user.user_details})

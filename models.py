@@ -162,7 +162,8 @@ class User(db.Model):
         return user
 
     # add in error handling
-    def get_user_details(self):
+    @property
+    def user_details(self):
         """Get this user's details"""
 
         return {
