@@ -14,7 +14,7 @@ from flask import (
 from models import (
     db, dbx, User, Friend, Like)
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import and_, or_
 
 
 load_dotenv()
@@ -109,26 +109,35 @@ def get_users():
 
     curr_username = decoded_token["username"]
 
-    print("THE CURRENT USERNAME IS -------------->", curr_username)
+    q = (
+        db.select(User)
+        .outerjoin(Like, Like.is_liking_username == User.username)
+        .outerjoin(Friend, Friend.is_friending_username == User.username)
+        .where(
+            and_(
+                User.username != curr_username,
+                or_(
+                    and_(
+                        Friend.is_friending_username != curr_username,
+                        Friend.is_friended_username != curr_username,
+                        Like.is_liking_username != curr_username
+                    ),
+                    Like.is_liking_username.is_(None),
+                    and_(
+                        Like.is_liking_username != curr_username,
+                        Friend.is_friending_username.is_(None)
+                    )
+                )
+            )
+        )
+    )
 
-    q = (db.select(User).outerjoin(Like, Like.is_liking_username == User.username)
-         .outerjoin(Friend, Friend.is_friended_username == User.username)
-         .where(
-             User.username != curr_username and
-        ((
-         Friend.is_friended_username != curr_username and
-         Friend.is_friending_username != curr_username) or
-         (Like.is_liking_username == None))
-    ))
+    print(f"THE QUERY IS ------------------->", q)
 
-    # Like.is_liking_username != curr_username and
-    # q = db.select(User).where(User.username != username)
     usersInst = dbx(q).scalars().all()
-    print(f"THE USERSINSTS ARE -------------------->", usersInst)
+    print(f"THE USERS ARE -------------------->", usersInst)
 
     users = [user.user_details for user in usersInst]
-
-    print(f"THE USERS ARE -------------------->", users)
 
     return jsonify({"users": users})
 
@@ -147,6 +156,34 @@ def get_user(username):
     user = db.get_or_404(User, username)
 
     return jsonify({"user": user.user_details})
+
+
+@app.get('/users/<username>/friends')
+def get_friends(username):
+    """Get a user's friends"""
+
+    decoded_token = jwt.decode(
+        request.headers["authorization"], SECRET_KEY, algorithms=['HS256'])
+
+    curr_username = decoded_token["username"]
+
+    q = (
+        db.select(User)
+        .join(Friend, Friend.is_friending_username == User.username)
+        .where(
+            or_(
+                Friend.is_friending_username == curr_username,
+                Friend.is_friended_username == curr_username,
+            )
+        )
+    )
+
+    usersInst = dbx(q).scalars().all()
+    print(f"THE USERS ARE -------------------->", usersInst)
+
+    users = [user.user_details for user in usersInst]
+
+    return jsonify({"users": users})
 
 
 @app.post('/users/like/<username>')
