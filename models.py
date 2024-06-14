@@ -20,17 +20,23 @@ class Friend(db.Model):
         db.UniqueConstraint("is_friended_username", "is_friending_username"),
     )
 
+    id = db.mapped_column(
+        db.Integer,
+        db.Identity(),
+        primary_key=True,
+    )
+
     is_friended_username = db.mapped_column(
         db.String(25),
         db.ForeignKey('users.username', ondelete="cascade"),
-        primary_key=True,
+        # primary_key=True,
         nullable=False,
     )
 
     is_friending_username = db.mapped_column(
         db.String(25),
         db.ForeignKey('users.username', ondelete="cascade"),
-        primary_key=True,
+        # primary_key=True,
         nullable=False,
     )
 
@@ -56,23 +62,23 @@ class Like(db.Model):
         db.UniqueConstraint("is_liked_username", "is_liking_username"),
     )
 
-    # id = db.mapped_column(
-    #     db.Integer,
-    #     db.Identity(),
-    #     primary_key=True,
-    # )
+    id = db.mapped_column(
+        db.Integer,
+        db.Identity(),
+        primary_key=True,
+    )
 
     is_liked_username = db.mapped_column(
         db.String(25),
         db.ForeignKey('users.username', ondelete="cascade"),
-        primary_key=True,
+        # primary_key=True,
         nullable=False,
     )
 
     is_liking_username = db.mapped_column(
         db.String(25),
         db.ForeignKey('users.username', ondelete="cascade"),
-        primary_key=True,
+        # primary_key=True,
         nullable=False,
     )
 

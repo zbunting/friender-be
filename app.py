@@ -109,35 +109,43 @@ def get_users():
 
     curr_username = decoded_token["username"]
 
-    q = (
-        db.select(User)
-        .outerjoin(Like, Like.is_liking_username == User.username)
-        .outerjoin(Friend, Friend.is_friending_username == User.username)
-        .where(
-            and_(
-                User.username != curr_username,
-                or_(
-                    and_(
-                        Friend.is_friending_username != curr_username,
-                        Friend.is_friended_username != curr_username,
-                        Like.is_liking_username != curr_username
-                    ),
-                    Like.is_liking_username.is_(None),
-                    and_(
-                        Like.is_liking_username != curr_username,
-                        Friend.is_friending_username.is_(None)
-                    )
-                )
-            )
-        )
+    q = (db.text(
+        f"""
+        WITH dont_show as (
+SELECT
+    f.is_friended_username as username
+    FROM friends as f
+    WHERE
+    f.is_friending_username = '{curr_username}'
+
+    UNION
+
+SELECT
+    l.is_liked_username
+    FROM likes as l
+    WHERE
+    l.is_liking_username = '{curr_username}'
+)
+
+SELECT
+    u.username
+    FROM users as u
+    LEFT OUTER JOIN dont_show as n ON u.username = n.username
+    WHERE n.username IS NULL AND u.username != '{curr_username}'
+    """
+    )
     )
 
     print(f"THE QUERY IS ------------------->", q)
 
-    usersInst = dbx(q).scalars().all()
-    print(f"THE USERS ARE -------------------->", usersInst)
+    usernames = dbx(q).scalars().all()
+    print(f"THE USERS ARE -------------------->", usernames)
 
-    users = [user.user_details for user in usersInst]
+    q = db.select(User).where(User.username.in_(usernames))
+    userInsts = dbx(q).scalars().all()
+    print(f"THE USERS ARE -------------------->", userInsts)
+
+    users = [user.user_details for user in userInsts]
 
     return jsonify({"users": users})
 
@@ -171,10 +179,12 @@ def get_friends(username):
         db.select(User)
         .join(Friend, Friend.is_friending_username == User.username)
         .where(
-            or_(
-                Friend.is_friending_username == curr_username,
-                Friend.is_friended_username == curr_username,
-            )
+            and_(User.username != username,
+                 or_(
+                     Friend.is_friending_username == curr_username,
+                     Friend.is_friended_username == curr_username,
+                 )
+                 )
         )
     )
 
@@ -196,14 +206,28 @@ def like_user(username):
     curr_username = decoded_token["username"]
 
     # query the db to see if username has liked curr user
-    q = db.select(Like).where(Like.is_liking_username == username and
-                              Like.is_liked_username == curr_username)
+    q = db.select(Like).where(
+        and_(
+            Like.is_liking_username == username,
+            Like.is_liked_username == curr_username
+        ))
+
+    print(f"THE QUERY IS ------------------->", q)
     like = dbx(q).one_or_none()
 
+    print(f"THE LIKES ARE -------------------->", like)
+
     if (like):
-        friend = Friend(is_friended_username=curr_username,
-                        is_friending_username=username)
-        db.session.add(friend)
+        print("ADDING A NEW LIKE HERE WHEN HAS BEEN LIKED!")
+        new_like = Like(is_liked_username=username,
+                        is_liking_username=curr_username)
+        db.session.add(new_like)
+        friend1 = Friend(is_friended_username=curr_username,
+                         is_friending_username=username)
+        db.session.add(friend1)
+        friend2 = Friend(is_friended_username=username,
+                         is_friending_username=curr_username)
+        db.session.add(friend2)
         db.session.commit()
         return jsonify({"msg": "match"})
 
