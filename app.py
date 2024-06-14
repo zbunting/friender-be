@@ -229,7 +229,7 @@ def like_user(username):
                          is_friending_username=curr_username)
         db.session.add(friend2)
         db.session.commit()
-        return jsonify({"msg": "match"})
+        return jsonify({"msg": "matched"})
 
     new_like = Like(is_liked_username=username,
                     is_liking_username=curr_username)
