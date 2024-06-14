@@ -56,6 +56,12 @@ class Like(db.Model):
         db.UniqueConstraint("is_liked_username", "is_liking_username"),
     )
 
+    # id = db.mapped_column(
+    #     db.Integer,
+    #     db.Identity(),
+    #     primary_key=True,
+    # )
+
     is_liked_username = db.mapped_column(
         db.String(25),
         db.ForeignKey('users.username', ondelete="cascade"),

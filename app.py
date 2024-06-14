@@ -107,9 +107,22 @@ def get_users():
     decoded_token = jwt.decode(
         request.headers["authorization"], SECRET_KEY, algorithms=['HS256'])
 
-    username = decoded_token["username"]
+    curr_username = decoded_token["username"]
 
-    q = db.select(User).where(User.username != username)
+    print("THE CURRENT USERNAME IS -------------->", curr_username)
+
+    q = (db.select(User).outerjoin(Like, Like.is_liking_username == User.username)
+         .outerjoin(Friend, Friend.is_friended_username == User.username)
+         .where(
+             User.username != curr_username and
+        ((
+         Friend.is_friended_username != curr_username and
+         Friend.is_friending_username != curr_username) or
+         (Like.is_liking_username == None))
+    ))
+
+    # Like.is_liking_username != curr_username and
+    # q = db.select(User).where(User.username != username)
     usersInst = dbx(q).scalars().all()
     print(f"THE USERSINSTS ARE -------------------->", usersInst)
 
@@ -146,18 +159,19 @@ def like_user(username):
     curr_username = decoded_token["username"]
 
     # query the db to see if username has liked curr user
-    q = db.select(Like).where(Like.is_liking == username &
-                              Like.is_liked == curr_username)
+    q = db.select(Like).where(Like.is_liking_username == username and
+                              Like.is_liked_username == curr_username)
     like = dbx(q).one_or_none()
 
     if (like):
         friend = Friend(is_friended_username=curr_username,
-                        is_friending=username)
+                        is_friending_username=username)
         db.session.add(friend)
         db.session.commit()
         return jsonify({"msg": "match"})
 
-    new_like = Like(is_liked_username=username, is_liking=curr_username)
+    new_like = Like(is_liked_username=username,
+                    is_liking_username=curr_username)
     db.session.add(new_like)
     db.session.commit()
     return jsonify({"msg": "liked"})
